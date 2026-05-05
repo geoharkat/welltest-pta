@@ -8,18 +8,14 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
-  apt_packages:
-    # No system packages required — all deps are pure-Python wheels.
   jobs:
     post_checkout:
-      # Cancel build if no docs/source changes (saves RTD build minutes)
       - git fetch --unshallow || true
 
 # Build documentation with Sphinx
 sphinx:
   configuration: docs/source/conf.py
   fail_on_warning: false
-  builder: html
 
 # Optionally also build PDF / EPUB
 formats:
@@ -37,7 +33,7 @@ python:
 # Search ranking
 search:
   ranking:
-    api/*: -1     # de-prioritise raw API pages
+    api/*: -1
     quickstart.html: 5
     detector.html: 4
     deconvolution.html: 4
