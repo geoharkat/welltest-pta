@@ -1,0 +1,190 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Project metadata (PEP 621)
+# ─────────────────────────────────────────────────────────────────────────────
+[project]
+name = "welltest-pta"
+dynamic = ["version"]
+description = "Pressure Transient Analysis (PTA) and Drill-Stem Test (DST) toolkit for the petroleum industry"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Ismail Harkat (geoharkat)", email = "geoharkat@gmail.com" },
+]
+maintainers = [
+    { name = "Ismail Harkat (geoharkat)", email = "geoharkat@gmail.com" },
+]
+keywords = [
+    "pressure-transient-analysis",
+    "PTA",
+    "DST",
+    "drill-stem-test",
+    "well-test",
+    "petroleum",
+    "oil-and-gas",
+    "reservoir-engineering",
+    "deconvolution",
+    "horner",
+    "bourdet",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Typing :: Typed",
+]
+dependencies = [
+    "numpy>=1.22",
+    "pandas>=1.4",
+    "scipy>=1.8",
+    "matplotlib>=3.5",
+]
+
+[project.optional-dependencies]
+excel = ["openpyxl>=3.0"]
+all   = ["openpyxl>=3.0", "xlsxwriter>=3.0"]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.1",
+    "mypy>=1.5",
+    "build>=0.10",
+    "twine>=4.0",
+]
+docs = [
+    "sphinx>=7.0",
+    "sphinx-rtd-theme>=1.3",
+    "sphinx-copybutton>=0.5",
+    "sphinx-autodoc-typehints>=1.24",
+    "myst-parser>=2.0",
+]
+
+[project.urls]
+Homepage      = "https://github.com/geoharkat/welltest-pta"
+Documentation = "https://welltest-pta.readthedocs.io"
+Repository    = "https://github.com/geoharkat/welltest-pta"
+Issues        = "https://github.com/geoharkat/welltest-pta/issues"
+Changelog     = "https://github.com/geoharkat/welltest-pta/blob/main/CHANGELOG.md"
+
+[project.scripts]
+welltest-pta = "welltest_pta.cli:main"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Setuptools
+# ─────────────────────────────────────────────────────────────────────────────
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+welltest_pta = ["py.typed"]
+
+[tool.setuptools.dynamic]
+version = { attr = "welltest_pta.__version__.__version__" }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# pytest
+# ─────────────────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+]
+testpaths = ["tests"]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore::UserWarning",
+]
+markers = [
+    "slow: tests that take more than 5 s",
+]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# coverage
+# ─────────────────────────────────────────────────────────────────────────────
+[tool.coverage.run]
+branch = true
+source = ["welltest_pta"]
+omit = [
+    "*/tests/*",
+    "*/__version__.py",
+]
+
+[tool.coverage.report]
+precision = 1
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "\\.\\.\\.",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ruff
+# ─────────────────────────────────────────────────────────────────────────────
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+extend-exclude = ["docs/source/conf.py"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "N",   # pep8-naming
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+    "C4",  # flake8-comprehensions
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "N803",  # argument name should be lowercase (we use scientific names)
+    "N806",  # variable in function should be lowercase (same)
+    "B008",  # do not perform function calls in argument defaults
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*"     = ["B011", "N802"]
+"examples/*"  = ["E402", "F401"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# mypy
+# ─────────────────────────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.9"
+strict_optional = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = false
+disallow_untyped_defs = false
+ignore_missing_imports = true
+exclude = ["tests/", "docs/", "examples/"]
