@@ -1,0 +1,179 @@
+# .github/workflows/ci.yml
+# Continuous integration — lint, type-check, test on a Python × OS matrix.
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel superseded runs on the same ref
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────
+  # 1. Lint + format check (fast — runs first, fails the matrix early)
+  # ────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Ruff check
+        run: ruff check src/ tests/ examples/
+
+      - name: Ruff format check
+        run: ruff format --check src/ tests/
+
+  # ────────────────────────────────────────────────────────────────────
+  # 2. Type-check
+  # ────────────────────────────────────────────────────────────────────
+  typecheck:
+    name: Type-check (mypy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install
+        run: |
+          pip install -e ".[dev]"
+
+      - name: mypy
+        run: mypy src/welltest_pta
+        continue-on-error: true
+
+  # ────────────────────────────────────────────────────────────────────
+  # 3. Tests across Python versions and OSes
+  # ────────────────────────────────────────────────────────────────────
+  test:
+    name: Test (Py${{ matrix.python-version }} on ${{ matrix.os }})
+    needs: lint
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        # Limit Windows to a single Python (matrix would otherwise be 12 jobs)
+        exclude:
+          - os: windows-latest
+            python-version: "3.9"
+          - os: windows-latest
+            python-version: "3.10"
+          - os: windows-latest
+            python-version: "3.12"
+          - os: macos-latest
+            python-version: "3.9"
+          - os: macos-latest
+            python-version: "3.10"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install package + test deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,excel]"
+
+      - name: Run pytest with coverage
+        run: |
+          pytest --cov=welltest_pta --cov-branch --cov-report=xml --cov-report=term -v
+
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  # ────────────────────────────────────────────────────────────────────
+  # 4. Examples smoke-test (catch regressions in user-facing scripts)
+  # ────────────────────────────────────────────────────────────────────
+  examples:
+    name: Examples smoke
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      - name: Run examples
+        run: |
+          python examples/quick_start.py
+          python examples/manual_split.py
+          python examples/deconvolution_demo.py
+        env:
+          MPLBACKEND: Agg          # headless matplotlib
+
+  # ────────────────────────────────────────────────────────────────────
+  # 5. Build sdist + wheel (catches packaging issues early)
+  # ────────────────────────────────────────────────────────────────────
+  build:
+    name: Build distribution
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build
+        run: |
+          python -m pip install --upgrade pip build twine
+          python -m build
+          twine check dist/*
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
