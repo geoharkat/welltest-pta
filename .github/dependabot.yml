@@ -1,0 +1,73 @@
+# .github/dependabot.yml
+# Dependabot configuration for automated dependency updates.
+# See https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+
+version: 2
+
+updates:
+  # Python dependencies (pyproject.toml)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Africa/Algiers"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    groups:
+      # Group minor + patch updates of scientific stack into one PR
+      scientific-python:
+        patterns:
+          - "numpy"
+          - "pandas"
+          - "scipy"
+          - "matplotlib"
+        update-types:
+          - "minor"
+          - "patch"
+      # Group all dev tooling
+      dev-tools:
+        patterns:
+          - "pytest*"
+          - "ruff"
+          - "mypy"
+          - "build"
+          - "twine"
+        update-types:
+          - "minor"
+          - "patch"
+      # Group docs tooling
+      docs:
+        patterns:
+          - "sphinx*"
+          - "myst-parser"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # Hold back any major upgrades — review manually
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+
+  # GitHub Actions workflows
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Africa/Algiers"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
