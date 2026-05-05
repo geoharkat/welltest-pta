@@ -24,6 +24,9 @@ on:
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   # ────────────────────────────────────────────────────────────────────
   # 1. Verify tag matches package version
@@ -53,6 +56,12 @@ jobs:
 
       - name: Compare with git tag
         run: |
+          # Skip version check when triggered manually (no tag to compare)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Manual trigger — skipping tag/version comparison."
+            exit 0
+          fi
+
           TAG=${GITHUB_REF#refs/tags/v}
           PKG=${{ steps.extract.outputs.version }}
           echo "Tag = $TAG, Package = $PKG"
