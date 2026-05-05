@@ -47,10 +47,7 @@ jobs:
       - name: Extract package version
         id: extract
         run: |
-          VERSION=$(python -c "import re,pathlib; \
-            txt = pathlib.Path('src/welltest_pta/__version__.py').read_text(); \
-            m = re.search(r'__version__\s*=\s*[\"\\\'](.*?)[\"\\\']', txt); \
-            print(m.group(1))")
+          VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Package version: $VERSION"
 
